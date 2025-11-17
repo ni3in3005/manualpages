@@ -1,9 +1,10 @@
 # Docker Command Reference with Comments
 
 ## Table of Contents
-- [Most Frequently Used Commands](#most-frequently-used-commands)
+- [Frequently Used Commands](#frequently-used-commands)
 - [Docker Basics](#docker-basics)
 - [Images](#images)
+- [Build](#build)
 - [Containers](#containers)
 - [Container Inspection and Logs](#container-inspection-and-logs)
 - [Exec and Shell Access](#exec-and-shell-access)
@@ -12,22 +13,26 @@
 - [Docker Compose](#docker-compose)
 - [Cleanup and Pruning](#cleanup-and-pruning)
 - [Docker Registry and Hub](#docker-registry-and-hub)
-- [Docker Info and Troubleshooting](#docker-info-and-troubleshooting)
 
 ---
 
-## Most Frequently Used Commands
+## Frequently Used Commands
 ```bash
-docker ps                     # List running containers
-docker ps -a                  # List all containers
-docker images                 # List all local images
-docker pull nginx             # Download image from Docker Hub
-docker run -d -p 8080:80 nginx  # Run container with port mapping
-docker logs -f web            # Follow logs of a container
-docker exec -it web bash      # Open shell inside container
-docker stop web               # Stop a running container
-docker rm web                 # Remove a stopped container
-docker system prune -a        # Clean up unused resources
+docker ps                                   # List running containers
+docker ps -a                                # List all containers
+docker images                               # List all local images
+docker build -t myapp:latest .              # Build with a tag for easier reference
+docker pull nginx                           # Download image from Docker Hub
+docker run -d -p 8080:80 nginx              # Run container with port mapping
+docker logs -f web                          # Follow logs of a container
+docker exec -it web bash                    # Open shell inside container
+docker stop $(docker ps -q)                 # Stop all running containers
+docker rm $(docker ps -aq)                  # Remove all containers (stopped and running with -f)
+docker events                               # Stream real time events from Docker daemon
+docker inspect web                          # Inspect container for configuration mistakes
+docker run --rm -it alpine ping google.com  # Quick test container to check network connectivity
+docker system df                            # Check how much space Docker is using
+docker system prune -a                      # Clean up unused resources
 ```
 
 ---
@@ -55,7 +60,23 @@ docker tag nginx:latest myrepo/nginx:prod    # Create a new tag pointing to the 
 docker history nginx:latest                  # Show layer history of an image
 docker inspect nginx:latest                  # Show detailed JSON metadata for an image
 ```
+---
 
+## Build
+```bash
+docker build .                               # Build an image from the Dockerfile in current directory
+docker build -t myapp:latest .               # Build with a tag for easier reference
+docker build -f Dockerfile.dev .             # Build using a specific Dockerfile
+docker build --no-cache -t myapp:latest .    # Build without using cache (forces fresh layers)
+docker build --pull -t myapp:latest .        # Always pull newer base images during build
+docker build -t user/myapp:v1 ./app          # Build from a specific directory path
+docker build --build-arg ENV=prod .          # Pass build-time ARG variables
+docker buildx build .                        # Use BuildKit builder (supports advanced features)
+docker buildx ls                             # List available builders
+docker buildx create --use                   # Create and enable multi-platform builder
+docker buildx build --platform linux/amd64,linux/arm64 -t user/app:multi .  # Multi-arch build
+docker commit container app:latest           # Create an image from a running container (rarely used)
+```
 ---
 
 ## Containers
@@ -175,14 +196,12 @@ docker search nginx                                # Search Docker Hub for image
 ```
 
 ---
-
-## Docker Info and Troubleshooting
+## Image Save / Load and Container Export / Copy
 ```bash
-docker info                                        # Show detailed Docker engine information
-docker ps -a                                       # Check running and stopped containers
-docker logs web                                    # Check application logs for issues
-docker events                                      # Stream real time events from Docker daemon
-docker inspect web                                 # Inspect container for configuration mistakes
-docker run --rm -it alpine ping google.com         # Quick test container to check network connectivity
-docker system df                                   # Check how much space Docker is using
+docker save nginx:latest -o nginx.tar     # Save image as a tar archive file
+docker load -i nginx.tar                  # Load image from a tar archive file
+docker export web -o web_fs.tar           # Export container filesystem as a tar (no image metadata)
+docker import web_fs.tar web:from-export  # Create image from exported tar filesystem
+docker cp web:/var/log/nginx ./nginx-logs # Copy files from container to host
+docker cp ./index.html web:/usr/share/nginx/html/index.html  # Copy file from host into container
 ```
